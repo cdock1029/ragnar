@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "qapplication.h"
 
 #include <QApplication>
 #include <QSqlDatabase>
@@ -7,6 +8,8 @@
 int main(int argc, char* argv[])
 {
     const QApplication a(argc, argv);
+    QApplication::setOrganizationName("C14");
+    QApplication::setApplicationName("Ragnar");
 
     QSqlDatabase db = QSqlDatabase::addDatabase("QSQLITE");
     db.setDatabaseName("ragnar.db");

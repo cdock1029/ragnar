@@ -25,4 +25,12 @@ class MainWindow : public QMainWindow { // NOLINT(*-special-member-functions)
 public:
     explicit MainWindow(QWidget* parent = nullptr);
     ~MainWindow() override;
+
+private:
+    void writeSettings();
+    void readSettings();
+
+    // QWidget interface
+protected:
+    void closeEvent(QCloseEvent* event) override;
 };

@@ -17,8 +17,7 @@ Api::~Api()
 
 void Api::getSymbol(const QString& symbol, const std::function<void(const QString&)>& callback, api::CacheParam cache_param)
 {
-
-    static const QString GLOBAL_QUOTE_URL { "https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%1&apikey=" VANTAGE };
+    static const auto GLOBAL_QUOTE_URL = u"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%1&apikey="_s VANTAGE;
 
     if (cache_param == api::CacheParam::USE_CACHE) {
         const QString find = lookup(symbol);

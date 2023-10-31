@@ -2,8 +2,10 @@
 #include "./ui_mainwindow.h"
 #include "watchlistdialog.h"
 
+#include <QCloseEvent>
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QSettings>
 #include <QSplitter>
 
 using namespace Qt::Literals::StringLiterals;
@@ -99,9 +101,45 @@ MainWindow::MainWindow(QWidget* parent)
             },
             api::CacheParam::USE_CACHE);
     });
+    readSettings();
 }
 
 MainWindow::~MainWindow()
 {
     delete ui;
+}
+
+void MainWindow::writeSettings()
+{
+    auto* layout = ui->centralwidget->layout();
+    auto* splitter = qobject_cast<QSplitter*>(layout->itemAt(0)->widget());
+
+    QSettings settings;
+    settings.beginGroup(u"MainWindow"_s);
+    settings.setValue(u"geometry"_s, saveGeometry());
+    settings.setValue(u"splitter.state"_s, splitter->saveState());
+    settings.endGroup();
+}
+
+void MainWindow::readSettings()
+{
+    QSettings settings;
+    settings.beginGroup(u"MainWindow"_s);
+    const auto geometry = settings.value(u"geometry"_s, QByteArray()).toByteArray();
+    const auto splitter_state = settings.value(u"splitter.state"_s, QByteArray()).toByteArray();
+    if (!geometry.isEmpty()) {
+        restoreGeometry(geometry);
+    }
+    if (!splitter_state.isEmpty()) {
+        auto* layout = ui->centralwidget->layout();
+        auto* splitter = qobject_cast<QSplitter*>(layout->itemAt(0)->widget());
+        splitter->restoreState(splitter_state);
+    }
+    settings.endGroup();
+}
+
+void MainWindow::closeEvent(QCloseEvent* event)
+{
+    writeSettings();
+    event->accept();
 }
