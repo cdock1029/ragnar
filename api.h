@@ -13,6 +13,21 @@ enum class CacheParam {
 };
 }
 
+struct Quote { // NOLINT(*-special-member-functions)
+    QString symbol;
+    QString response;
+    double open;
+    double high;
+    double low;
+    double price;
+    int volume;
+    QString latest_trading_day;
+    double previous_close;
+    double change;
+    QString change_percent;
+    QString updated_at;
+};
+
 class Api : public QObject { // NOLINT(*-special-member-functions)
     Q_OBJECT
 
@@ -22,11 +37,12 @@ public:
     explicit Api(QObject* parent = nullptr);
     ~Api() override;
 
-    void getSymbol(const QString& symbol, const std::function<void(const QString& response)>& callback, api::CacheParam = api::CacheParam::USE_CACHE);
+    void getSymbol(const QString& symbol, const std::function<void(Quote&& quote)>&& callback, api::CacheParam = api::CacheParam::USE_CACHE);
 
 signals:
 
 private:
-    static QString lookup(const QString& symbol);
-    static void save(const QString& symbol, const QString& response);
+    static Quote lookup(const QString& symbol);
+    static Quote parseQuoteResponse(const QString& response);
+    static void save(const Quote& quote);
 };

@@ -85,19 +85,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     connect(ui->api_btn, &QPushButton::clicked, this, [this]() {
         m_api->getSymbol(
-            u"ALLY"_s, [](const QString& response) {
-                QJsonParseError error;
-                auto json = QJsonDocument::fromJson(response.toUtf8(), &error);
-                if (json.isNull()) {
-                    qDebug() << "Json error:" << &error;
-                } else {
-                    QJsonObject global = json["Global Quote"].toObject();
-                    qDebug() << "global: " << global;
-                    auto price = global["05. price"].toString();
-                    qDebug() << "price: " << price;
-                    auto p = price.toDouble();
-                    qDebug() << "price double: " << p;
-                }
+            u"ALLY"_s, [](const Quote& quote) {
+                qDebug() << "Quote inside main window connect:" << &quote;
             },
             api::CacheParam::USE_CACHE);
     });
