@@ -1,1 +1,1 @@
-# Messing around with Qt to track stocks
+### Messing around with Qt to track stocks
