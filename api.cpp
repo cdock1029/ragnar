@@ -9,7 +9,6 @@
 
 Api::Api(QObject* parent)
     : QObject { parent }
-    , m_network_access_manager { new QNetworkAccessManager }
 {
 }
 

@@ -31,15 +31,13 @@ struct Quote { // NOLINT(*-special-member-functions)
 class Api : public QObject { // NOLINT(*-special-member-functions)
     Q_OBJECT
 
-    QNetworkAccessManager* m_network_access_manager;
+    QNetworkAccessManager* m_network_access_manager = new QNetworkAccessManager;
 
 public:
     explicit Api(QObject* parent = nullptr);
     ~Api() override;
 
     void getSymbol(const QString& symbol, const std::function<void(Quote&& quote)>&& callback, api::CacheParam = api::CacheParam::USE_CACHE);
-
-signals:
 
 private:
     static Quote lookup(const QString& symbol);
