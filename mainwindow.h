@@ -2,6 +2,7 @@
 
 #include "api.h"
 #include <QMainWindow>
+#include <QSqlQueryModel>
 #include <QSqlRelationalTableModel>
 #include <QSqlTableModel>
 
@@ -17,7 +18,7 @@ class MainWindow : public QMainWindow { // NOLINT(*-special-member-functions)
     Ui::MainWindow* ui;
 
     QSqlTableModel* m_watchlists_model;
-    QSqlTableModel* m_watch_list_symbols;
+    QSqlQueryModel* m_watch_list_query;
     Api* m_api;
 
     static constexpr int ACTIVE_WATCHLIST_LABEL_FONT_SIZE { 18 };

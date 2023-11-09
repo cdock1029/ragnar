@@ -20,7 +20,7 @@ WatchListDialog::WatchListDialog(QSqlTableModel* watchlist_model, QWidget* paren
 
         record.setValue(u"name"_s, ui->name_edit->text());
         record.setValue(u"note"_s, ui->note_edit->toPlainText());
-        record.remove(WATCHLISTS_CREATED_AT_COL);
+        record.remove(m_watchlist_model->fieldIndex(u"created_at"_s));
 
         if (m_watchlist_model->insertRecord(-1, record)) {
             m_watchlist_model->submitAll();

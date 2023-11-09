@@ -7,6 +7,8 @@
 #include <QJsonObject>
 #include <QSettings>
 #include <QSplitter>
+#include <QSqlQuery>
+#include <QSqlRecord>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -14,7 +16,7 @@ MainWindow::MainWindow(QWidget* parent)
     : QMainWindow(parent)
     , ui(new Ui::MainWindow)
     , m_watchlists_model { new QSqlTableModel { this } }
-    , m_watch_list_symbols { new QSqlTableModel { this } }
+    , m_watch_list_query { new QSqlQueryModel { this } }
     , m_api { new Api { this } }
 {
     ui->setupUi(this);
@@ -25,25 +27,30 @@ MainWindow::MainWindow(QWidget* parent)
     splitter->addWidget(ui->watchlists_frame);
     splitter->addWidget(ui->active_watchlist_frame);
 
+    // todo: fix width of splitter
+    splitter->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
     auto* layout = new QHBoxLayout { ui->centralwidget };
     layout->addWidget(splitter, 0, Qt::AlignLeft);
     ui->centralwidget->setLayout(layout);
 
-    m_watchlists_model->setTable("watch_lists");
+    m_watchlists_model->setTable(u"watch_lists"_s);
     m_watchlists_model->select();
+
     auto* watch_list_view = ui->watch_lists_view;
     watch_list_view->setModel(m_watchlists_model);
-    watch_list_view->setModelColumn(1);
+    watch_list_view->setModelColumn(m_watchlists_model->fieldIndex(u"name"_s));
     watch_list_view->setSelectionBehavior(QAbstractItemView::SelectRows);
     watch_list_view->setContextMenuPolicy(Qt::CustomContextMenu);
 
-    m_watch_list_symbols->setTable("watch_list_symbols");
-    m_watch_list_symbols->select();
-
+    //
     auto* active_watchlist_table = ui->active_watchlist_table;
-    active_watchlist_table->setModel(m_watch_list_symbols);
+    active_watchlist_table->setModel(m_watch_list_query);
     active_watchlist_table->verticalHeader()->hide();
-    active_watchlist_table->hideColumn(0);
+
+    active_watchlist_table->horizontalHeader()->setSectionResizeMode(QHeaderView::Stretch);
+    active_watchlist_table->horizontalHeader()->setStretchLastSection(true);
+    //
 
     auto font = ui->active_watchlist_label->font();
     font.setPointSize(ACTIVE_WATCHLIST_LABEL_FONT_SIZE);
@@ -66,7 +73,6 @@ MainWindow::MainWindow(QWidget* parent)
     });
 
     connect(ui->toolButton, &QToolButton::clicked, ui->actionNew_Watchlist, &QAction::triggered);
-    // connect(ui->add_ticker_tool_btn, &QToolButton::clicked, );
 
     connect(watch_list_view, &QListView::customContextMenuRequested, this, [=, this](QPoint pos) {
         auto* menu = new QMenu { this };
@@ -74,14 +80,17 @@ MainWindow::MainWindow(QWidget* parent)
         menu->popup(watch_list_view->viewport()->mapToGlobal(pos));
     });
 
-    connect(watch_list_view->selectionModel(), &QItemSelectionModel::currentChanged, this, [this](const QModelIndex& current, [[maybe_unused]] const QModelIndex& previous) {
-        const auto id = current.siblingAtColumn(0).data().toInt();
-        m_watch_list_symbols->setFilter(u"watch_list_id = %1"_s.arg(id));
-        ui->active_watchlist_label->setText(current.data().toString());
-        // ui->active_watchlist_label->setStyleSheet(u"font-weight: bold"_s);
+    connect(watch_list_view->selectionModel(), &QItemSelectionModel::currentChanged, this, [=, this](const QModelIndex& current, [[maybe_unused]] const QModelIndex& previous) {
+        const auto name = current.data().toString();
+        ui->active_watchlist_label->setText(name);
+
+        m_watch_list_query->setQuery(u"SELECT q.symbol, q.price from quotes q "
+                                     "inner join watch_list_symbols ws on q.symbol = ws.symbol "
+                                     "inner join watch_lists w on w.name = ws.watch_list_name "
+                                     "where ws.watch_list_name = '%1'"_s.arg(name));
     });
 
-    watch_list_view->setCurrentIndex(watch_list_view->model()->index(0, 1));
+    watch_list_view->setCurrentIndex(watch_list_view->model()->index(0, m_watchlists_model->fieldIndex(u"name"_s)));
 
     connect(ui->api_btn, &QPushButton::clicked, this, [this]() {
         m_api->getSymbol(
