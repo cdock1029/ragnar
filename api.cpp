@@ -12,11 +12,6 @@ Api::Api(QObject* parent)
 {
 }
 
-Api::~Api()
-{
-    delete m_network_access_manager;
-}
-
 void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& callback, api::CacheParam cache_param)
 {
     static const auto GLOBAL_QUOTE_URL = u"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%1&apikey="_s VANTAGE;
@@ -34,7 +29,7 @@ void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& 
 
     auto* reply = m_network_access_manager->get(request);
 
-    connect(reply, &QNetworkReply::finished, this, [=]() {
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
         reply->deleteLater();
         const QString response = reply->readAll();
         qInfo() << "QNetworkReply::finished response:" << response;
@@ -43,7 +38,7 @@ void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& 
         callback(std::move(quote));
     });
 
-    connect(reply, &QNetworkReply::errorOccurred, this, [=](QNetworkReply::NetworkError error) {
+    QObject::connect(reply, &QNetworkReply::errorOccurred, [=](QNetworkReply::NetworkError error) {
         reply->deleteLater();
         qWarning() << "NetworkError: " << error;
     });
