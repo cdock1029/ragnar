@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "./ui_mainwindow.h"
+#include "api.h"
 #include "watchlistdialog.h"
 
 #include <QCloseEvent>
@@ -17,7 +18,6 @@ MainWindow::MainWindow(QWidget* parent)
     , ui(new Ui::MainWindow)
     , m_watchlists_model { new QSqlTableModel { this } }
     , m_watch_list_query { new QSqlQueryModel { this } }
-    , m_api { new Api { this } }
 {
     ui->setupUi(this);
     setWindowTitle(u"Ragnar"_s);
