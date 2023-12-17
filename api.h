@@ -3,7 +3,6 @@
 #include <QNetworkAccessManager>
 #include <QObject>
 #include <functional>
-#include <memory>
 
 using namespace Qt::Literals::StringLiterals;
 
@@ -32,11 +31,15 @@ struct Quote { // NOLINT(*-special-member-functions)
 class Api : public QObject { // NOLINT(*-special-member-functions)
     Q_OBJECT
 
-    inline static const std::unique_ptr<QNetworkAccessManager> m_network_access_manager = std::make_unique<QNetworkAccessManager>();
-
 public:
     explicit Api(QObject* parent = nullptr);
     ~Api() override = default;
+
+    static QNetworkAccessManager& getManager()
+    {
+        static QNetworkAccessManager manager;
+        return manager;
+    }
 
     static void getSymbol(const QString& symbol, const std::function<void(Quote&& quote)>&& callback, api::CacheParam = api::CacheParam::USE_CACHE);
 

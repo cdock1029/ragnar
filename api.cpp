@@ -14,6 +14,7 @@ Api::Api(QObject* parent)
 
 void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& callback, api::CacheParam cache_param)
 {
+    // define VANTAGE api key in env.h which isn't in source control
     static const auto GLOBAL_QUOTE_URL = u"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%1&apikey="_s VANTAGE;
 
     if (cache_param == api::CacheParam::USE_CACHE) {
@@ -27,7 +28,7 @@ void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& 
 
     auto request = QNetworkRequest { QUrl { GLOBAL_QUOTE_URL.arg(symbol) } };
 
-    auto* reply = m_network_access_manager->get(request);
+    auto* reply = getManager().get(request);
 
     QObject::connect(reply, &QNetworkReply::finished, [=]() {
         reply->deleteLater();

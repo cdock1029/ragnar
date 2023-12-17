@@ -92,8 +92,8 @@ MainWindow::MainWindow(QWidget* parent)
 
     watch_list_view->setCurrentIndex(watch_list_view->model()->index(0, m_watchlists_model->fieldIndex(u"name"_s)));
 
-    connect(ui->api_btn, &QPushButton::clicked, this, [this]() {
-        m_api->getSymbol(
+    connect(ui->api_btn, &QPushButton::clicked, this, []() {
+        Api::getSymbol(
             u"ALLY"_s, [](const Quote& quote) {
                 qDebug() << "Quote inside main window connect:" << &quote;
             },
