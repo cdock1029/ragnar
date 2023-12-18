@@ -15,8 +15,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_FLAGS
     "${CMAKE_CXX_FLAGS} -Wall -Wextra -Wconversion -Wshadow -Wpedantic")
 
-add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
-add_link_options(-fsanitize=address,undefined)
+# add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+# add_link_options(-fsanitize=address,undefined)
 
 find_package(Qt6 REQUIRED COMPONENTS Widgets Sql Network)
 

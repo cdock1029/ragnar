@@ -6,14 +6,7 @@
 
 using namespace Qt::Literals::StringLiterals;
 
-namespace api {
-enum class CacheParam {
-    USE_NETWORK,
-    USE_CACHE
-};
-}
-
-struct Quote { // NOLINT(*-special-member-functions)
+struct Quote {
     QString symbol;
     QString response;
     double open;
@@ -26,25 +19,23 @@ struct Quote { // NOLINT(*-special-member-functions)
     double change;
     QString change_percent;
     QString updated_at;
+    friend QDebug operator<<(QDebug debug, const Quote& c)
+    {
+        QDebugStateSaver saver(debug);
+        debug.nospace() << "Quote(" << c.symbol << ", " << c.response << ", " << c.open << ", " << c.high << ", " << c.low << ", " << c.price << ", " << c.volume << ", " << c.latest_trading_day << ", " << c.previous_close << ", " << c.change << ", " << c.change_percent << ", " << c.updated_at << ")";
+        return debug;
+    }
 };
 
-class Api : public QObject { // NOLINT(*-special-member-functions)
-    Q_OBJECT
+namespace Api {
 
-public:
-    explicit Api(QObject* parent = nullptr);
-    ~Api() override = default;
+enum class CacheParam {
+    USE_NETWORK,
+    USE_CACHE
+};
 
-    static QNetworkAccessManager& getManager()
-    {
-        static QNetworkAccessManager manager;
-        return manager;
-    }
+extern QNetworkAccessManager& getManager();
 
-    static void getSymbol(const QString& symbol, const std::function<void(Quote&& quote)>&& callback, api::CacheParam = api::CacheParam::USE_CACHE);
+extern void getSymbol(const QString& symbol, const std::function<void(Quote&& quote)>&& callback, CacheParam = CacheParam::USE_CACHE);
 
-private:
-    static Quote lookup(const QString& symbol);
-    static Quote parseQuoteResponse(const QString& response);
-    static void save(const Quote& quote);
 };

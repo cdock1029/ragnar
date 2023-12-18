@@ -3,49 +3,14 @@
 #include "qassert.h"
 #include <QJsonDocument>
 #include <QJsonObject>
+#include <QMessageBox>
+#include <QNetworkDiskCache>
 #include <QNetworkReply>
 #include <QSqlError>
 #include <QSqlQuery>
+#include <QStandardPaths>
 
-Api::Api(QObject* parent)
-    : QObject { parent }
-{
-}
-
-void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& callback, api::CacheParam cache_param)
-{
-    // define VANTAGE api key in env.h which isn't in source control
-    static const auto GLOBAL_QUOTE_URL = u"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%1&apikey="_s VANTAGE;
-
-    if (cache_param == api::CacheParam::USE_CACHE) {
-        Quote find = lookup(symbol);
-        if (!find.symbol.isEmpty()) {
-            callback(std::move(find));
-            return;
-        }
-    }
-    qDebug() << "getSymbol initiating request for symbol:" << symbol;
-
-    auto request = QNetworkRequest { QUrl { GLOBAL_QUOTE_URL.arg(symbol) } };
-
-    auto* reply = getManager().get(request);
-
-    QObject::connect(reply, &QNetworkReply::finished, [=]() {
-        reply->deleteLater();
-        const QString response = reply->readAll();
-        qInfo() << "QNetworkReply::finished response:" << response;
-        Quote quote = parseQuoteResponse(response);
-        save(quote);
-        callback(std::move(quote));
-    });
-
-    QObject::connect(reply, &QNetworkReply::errorOccurred, [=](QNetworkReply::NetworkError error) {
-        reply->deleteLater();
-        qWarning() << "NetworkError: " << error;
-    });
-}
-
-Quote Api::lookup(const QString& symbol)
+Quote lookup(const QString& symbol)
 {
     QSqlQuery query;
     query.prepare("SELECT * FROM quotes WHERE symbol = ? limit 1");
@@ -74,7 +39,7 @@ Quote Api::lookup(const QString& symbol)
     return Quote {};
 }
 
-Quote Api::parseQuoteResponse(const QString& response)
+Quote parseQuoteResponse(const QString& response)
 {
     QJsonParseError error;
     auto json = QJsonDocument::fromJson(response.toUtf8(), &error);
@@ -98,7 +63,7 @@ Quote Api::parseQuoteResponse(const QString& response)
         volume.toInt(), latest_trading_day, previous_close.toDouble(), change.toDouble(), change_percent, "" /*updated_at*/ };
 }
 
-void Api::save(const Quote& quote)
+void save(const Quote& quote)
 {
     qDebug() << "-- save --";
     QSqlQuery query;
@@ -123,4 +88,60 @@ void Api::save(const Quote& quote)
         qWarning() << "save symbol error:" << query.lastError();
         qWarning() << "quote:" << &quote;
     }
+}
+
+void Api::getSymbol(const QString& symbol, const std::function<void(Quote&&)>&& callback, CacheParam cache_param)
+{
+    // define VANTAGE api key in env.h
+    static const auto GLOBAL_QUOTE_URL = u"https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=%1&apikey="_s VANTAGE;
+
+    if (cache_param == CacheParam::USE_CACHE) {
+        Quote find = lookup(symbol);
+        if (!find.symbol.isEmpty()) {
+            callback(std::move(find));
+            return;
+        }
+    }
+    qDebug() << "getSymbol initiating request for symbol:" << symbol;
+
+    auto request = QNetworkRequest { QUrl { GLOBAL_QUOTE_URL.arg(symbol) } };
+    request.setAttribute(QNetworkRequest::AutoDeleteReplyOnFinishAttribute, true);
+    // request.setAttribute(QNetworkRequest::CacheSaveControlAttribute, true);
+    // request.setAttribute(QNetworkRequest::CacheLoadControlAttribute, QNetworkRequest::AlwaysCache);
+
+    auto* reply = getManager().get(request);
+
+    QObject::connect(reply, &QNetworkReply::errorOccurred, [=]([[maybe_unused]] QNetworkReply::NetworkError error) {
+        qWarning() << "NetworkError: " << reply->errorString();
+    });
+
+    QObject::connect(reply, &QNetworkReply::finished, [=]() {
+        if (reply->error() == QNetworkReply::NoError) {
+            auto fromCache = reply->attribute(QNetworkRequest::SourceIsFromCacheAttribute);
+            if (fromCache.toBool()) {
+                qInfo() << "\nREPLY IS from network CACHE!" << '\n';
+            }
+            const QString response = reply->readAll();
+            qInfo() << "QNetworkReply::finished response:" << response;
+            Quote quote = parseQuoteResponse(response);
+            save(quote);
+            callback(std::move(quote));
+        } else {
+            qInfo() << "finished but with error, not processing response.";
+        }
+    });
+}
+
+QNetworkAccessManager& Api::getManager()
+{
+    static bool isSetup { false };
+    static QNetworkDiskCache diskCache;
+    static QNetworkAccessManager manager;
+    if (!isSetup) {
+        // /home/user/.cache/C14/Ragnar/cache
+        diskCache.setCacheDirectory(QStandardPaths::writableLocation(QStandardPaths::CacheLocation) + u"/cache/"_s);
+        manager.setCache(&diskCache);
+        isSetup = true;
+    }
+    return manager;
 }

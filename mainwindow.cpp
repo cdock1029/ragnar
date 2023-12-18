@@ -95,9 +95,9 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->api_btn, &QPushButton::clicked, this, []() {
         Api::getSymbol(
             u"ALLY"_s, [](const Quote& quote) {
-                qDebug() << "Quote inside main window connect:" << &quote;
+                qDebug() << "Quote inside main window connect:" << quote;
             },
-            api::CacheParam::USE_CACHE);
+            Api::CacheParam::USE_CACHE);
     });
     readSettings();
 }

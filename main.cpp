@@ -4,7 +4,6 @@
 #include <QApplication>
 #include <QSqlDatabase>
 #include <QSqlQuery>
-#include <cstdlib>
 
 bool setupDb()
 {
